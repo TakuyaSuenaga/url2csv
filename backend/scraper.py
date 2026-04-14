@@ -1,3 +1,5 @@
+import asyncio
+
 import requests
 from bs4 import BeautifulSoup
 from playwright.async_api import async_playwright
@@ -89,11 +91,16 @@ async def _fetch_with_playwright(url: str) -> str:
     return combined[:MAX_TEXT_LENGTH]
 
 
+def _requests_get(url: str) -> requests.Response:
+    res = requests.get(url, headers=HEADERS, timeout=15)
+    res.raise_for_status()
+    return res
+
+
 async def scrape_text(url: str) -> str:
-    # まず requests で取得（高速）
+    # まず requests で取得（高速）— asyncio.to_thread でイベントループをブロックしない
     try:
-        res = requests.get(url, headers=HEADERS, timeout=15)
-        res.raise_for_status()
+        res = await asyncio.to_thread(_requests_get, url)
         text = _parse_html(res.text)
         if len(text) >= MIN_TEXT_LENGTH:
             return text[:MAX_TEXT_LENGTH]

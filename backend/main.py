@@ -39,7 +39,11 @@ async def extract(body: RequestBody):
 
             yield {"data": json.dumps({"type": "progress", "message": f"AI解析中... ({i + 1}/{total})"})}
 
-            data = await parse_with_ai(text, body.columns)
+            try:
+                data = await parse_with_ai(text, body.columns)
+            except Exception as e:
+                yield {"data": json.dumps({"type": "error", "message": f"AI解析失敗 ({url}): {e}"})}
+                continue
             all_data.extend(data)
 
         # 重複除去
